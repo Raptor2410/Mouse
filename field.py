@@ -25,9 +25,11 @@ class Field():
         self.STATIC_WALL = 2
         self.START = 3
         self.GOAL = 4
-
-        self.maze_height = 64
-        self.maze_width = 64
+        
+        self.img = None
+        self.is_show = False
+        self.maze_height = 32
+        self.maze_width = 32
         self.goal_coordinate_y = int(self.maze_height / 2)
         self.goal_coordinate_x = int(self.maze_width / 2)
         self.goal_y = self.goal_coordinate_y * 2 + 1
@@ -50,7 +52,6 @@ class Field():
         self.field[self.goal_y][self.goal_x] = self.GOAL
         hole_direction = np.random.randint(0,3)
         
-        print(hole_direction)
         if hole_direction == 0:
             self.field[self.goal_y][self.goal_x - 1] = self.WALL
         elif hole_direction == 1:
@@ -109,12 +110,9 @@ class Field():
                 y -= 1
                 self.set_start_coordinate(y, x)
                 # print("UP")
-
         start_coordinate = self.get_start_coordinate()
         if (start_coordinate != None):
             self.dig_ground(start_coordinate['y'], start_coordinate['x'])
-            
-
 
     def set_start_coordinate(self, y, x):
         
@@ -131,17 +129,33 @@ class Field():
         index = np.random.randint(0, len(self.start_cells))
         return self.start_cells.pop(index)
 
-
-    def view_field(self):
+    def create_view_field(self):
+        global canvas, item
         self.root = tk.Tk()
         self.root.title("Field")
         sdf = self.field_to_Image()
         sdf = sdf.resize((self.field_width * 5,self.field_height * 5), Image.BOX)
-        img = ImageTk.PhotoImage(image=sdf)
-        canvas = tk.Canvas(self.root,width=self.field_width * 5 + 5,height=self.field_height * 5 + 5)
+        self.img = ImageTk.PhotoImage(image=sdf)
+        canvas = tk.Canvas(self.root,width=self.field_width * 5 + 5,height=self.field_height * 5 + 5 + 30)
         canvas.pack()
-        canvas.create_image(5,5, anchor="nw", image=img)
+        item = canvas.create_image(5,5 + 30, anchor="nw", image=self.img)
+        self.create_button()
+    
+    def delete_view_field(self):
+        self.root.destroy()
+
+    def update_view(self):
+        self.__init__()
+        sdf = self.field_to_Image()
+        sdf = sdf.resize((self.field_width * 5,self.field_height * 5), Image.BOX)
+        sdf = ImageTk.PhotoImage(image=sdf)
+        canvas.itemconfig(item,image=sdf)
+        # canvas = tk.Canvas(self.root,width=self.field_width * 5 + 5,height=self.field_height * 5 + 5 + 30)
+        # canvas.configure(Image=sdf)
+        canvas.pack()
+        canvas.create_image(5,5 + 30, anchor="nw", image=sdf)
         self.root.mainloop()
+
 
     def field_to_Image(self):
         rgb = np.zeros((self.field_height, self.field_width, 3))
@@ -157,9 +171,18 @@ class Field():
     def get_wall(self):
         print('hogehoge')
 
+    def create_button(self):
+        btn = tk.Button(self.root, text='ボタン', background='blue', command=self.update_view)
+        btn2 = tk.Button(self.root, text='閉じる', bg='yellow', command=self.delete_view_field)
+        btn.place(x=5, y=5)
+        btn2.place(x=100, y=5)
+
 if __name__ == '__main__':
     sys.setrecursionlimit(20000)
     # resource.setrlimit(10 ** 10)
     asd = Field()
     asd.create_maze()
-    asd.view_field()
+    asd.create_view_field()
+    asd.root.mainloop()
+    # input()
+    # asd.delete_view_field()
