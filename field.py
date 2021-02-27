@@ -1,9 +1,10 @@
-import numpy as np
+import sys
 import tkinter as tk
+import numpy as np
 from PIL import Image, ImageTk
 from enum import IntEnum
-import sys
-import resource
+import threading
+# import resource
 
 class Direction(IntEnum):
     UP = 0
@@ -25,7 +26,10 @@ class Field():
         self.STATIC_WALL = 2
         self.START = 3
         self.GOAL = 4
-        
+
+        self.window_width = 0
+        self.window_height = 0
+
         self.img = None
         self.is_show = False
         self.maze_height = 32
@@ -40,6 +44,10 @@ class Field():
         self.field = np.pad(self.field, (1,1), 'constant', constant_values=(1))
 
         self.start_cells = []
+
+    def reset(self):
+        self.field = np.ones((self.field_height - 2, self.field_width - 2), dtype = int)
+        self.field = np.pad(self.field, (1,1), 'constant', constant_values=(1))
 
     def create_maze(self):
         
@@ -133,10 +141,14 @@ class Field():
         global canvas, item
         self.root = tk.Tk()
         self.root.title("Field")
+
+        self.window_width = self.field_width * 5 + 5
+        self.window_height = self.field_height * 5 + 5 + 30
+
         sdf = self.field_to_Image()
         sdf = sdf.resize((self.field_width * 5,self.field_height * 5), Image.BOX)
         self.img = ImageTk.PhotoImage(image=sdf)
-        canvas = tk.Canvas(self.root,width=self.field_width * 5 + 5,height=self.field_height * 5 + 5 + 30)
+        canvas = tk.Canvas(self.root,bg='White',width=self.window_width + 5,height=self.window_height)
         canvas.pack()
         item = canvas.create_image(5,5 + 30, anchor="nw", image=self.img)
         self.create_button()
@@ -145,17 +157,13 @@ class Field():
         self.root.destroy()
 
     def update_view(self):
-        self.__init__()
+        self.reset()
+        self.create_maze()
+        
         sdf = self.field_to_Image()
         sdf = sdf.resize((self.field_width * 5,self.field_height * 5), Image.BOX)
-        sdf = ImageTk.PhotoImage(image=sdf)
-        canvas.itemconfig(item,image=sdf)
-        # canvas = tk.Canvas(self.root,width=self.field_width * 5 + 5,height=self.field_height * 5 + 5 + 30)
-        # canvas.configure(Image=sdf)
-        canvas.pack()
-        canvas.create_image(5,5 + 30, anchor="nw", image=sdf)
-        self.root.mainloop()
-
+        new_img = ImageTk.PhotoImage(image=sdf)
+        canvas.itemconfig(item,image=new_img)
 
     def field_to_Image(self):
         rgb = np.zeros((self.field_height, self.field_width, 3))
@@ -172,17 +180,18 @@ class Field():
         print('hogehoge')
 
     def create_button(self):
-        btn = tk.Button(self.root, text='ボタン', background='blue', command=self.update_view)
-        btn2 = tk.Button(self.root, text='閉じる', bg='yellow', command=self.delete_view_field)
-        btn.place(x=5, y=5)
-        btn2.place(x=100, y=5)
+        btn = tk.Button(self.root, text='ボタン', background='#BBBBFF', command=self.update_view)
+        btn2 = tk.Button(self.root, text='閉じる', bg='#C0C0C0', command=self.delete_view_field)
+        btn.place(x=self.window_width-100, y=5)
+        btn2.place(x=self.window_width-50, y=5)
+
+    def show_maze(self):
+        self.create_maze()
+        self.create_view_field()
+        self.root.mainloop()
 
 if __name__ == '__main__':
     sys.setrecursionlimit(20000)
-    # resource.setrlimit(10 ** 10)
     asd = Field()
-    asd.create_maze()
-    asd.create_view_field()
-    asd.root.mainloop()
-    # input()
-    # asd.delete_view_field()
+    thread = threading.Thread(target=asd.show_maze)
+    thread.start()
